@@ -6,14 +6,20 @@ pipeline {
         stage('Deploy Infrastructure') {
             steps {
                 sh '''
-                docker rm -f backend1 backend2 nginx-lb || true
-                docker run -d --name backend1 backend-app
-                docker run -d --name backend2 backend-app
+                # Create a shared network if it doesn't exist
+                docker network create lab-net || true
                 
-                # Using port 8081 to avoid "Port already allocated" errors
-                docker run -d --name nginx-lb -p 8081:80 nginx
+                # Clean up old containers
+                docker rm -f backend1 backend2 nginx-lb || true
+                
+                # Start containers on the shared network
+                docker run -d --name backend1 --network lab-net backend-app
+                docker run -d --name backend2 --network lab-net backend-app
+                docker run -d --name nginx-lb --network lab-net -p 8081:80 nginx
                 
                 sleep 2
+                
+                # Copy the config and reload
                 docker cp nginx/default.conf nginx-lb:/etc/nginx/conf.d/default.conf
                 docker exec nginx-lb nginx -s reload
                 '''
