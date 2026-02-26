@@ -23,18 +23,17 @@ pipeline {
         }
         stage('Deploy NGINX Load Balancer') {
             steps {
-                sh '''
-                docker rm -f nginx-lb || true
-                docker run -d --name nginx-lb -p 80:80 \
-                -v $(pwd)/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro \
-                nginx
-                '''
+                script {
+                    def workspace = pwd()
+                    sh "docker rm -f nginx-lb || true"
+                    sh "docker run -d --name nginx-lb -p 80:80 -v ${workspace}/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro nginx"
+                }
             }
         }
     }
     post {
         success {
-            echo 'Pipeline executed successfully, NGINX load balancer is running.'
+            echo 'Pipeline executed successfully!'
         }
     }
 }
